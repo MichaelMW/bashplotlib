@@ -16,6 +16,9 @@ from os.path import dirname
 from .utils.helpers import *
 from .utils.commandhelp import hist
 
+from signal import signal, SIGPIPE, SIG_DFL
+signal(SIGPIPE,SIG_DFL)
+
 
 def calc_bins(n, min_val, max_val, h=None, binwidth=None):
     """
@@ -42,9 +45,8 @@ def read_numbers(numbers):
         for number in numbers:
             yield float(str(number).strip())
     else:
-        with open(numbers) as fh:
-            for number in fh:
-                yield float(number.strip())
+        for number in open(numbers):
+            yield float(number.strip())
 
 
 def run_demo():
@@ -107,11 +109,10 @@ def plot_hist(f, height=20.0, bincount=None, binwidth=None, pch="o", colour="def
         pch = "o"
 
     if isinstance(f, str):
-        with open(f) as fh:
-            f = fh.readlines()
+        f = open(f).readlines()
 
     min_val, max_val = None, None
-    n, mean, sd = 0.0, 0.0, 0.0
+    n, mean = 0.0, 0.0
 
     for number in read_numbers(f):
         n += 1
@@ -122,12 +123,6 @@ def plot_hist(f, height=20.0, bincount=None, binwidth=None, pch="o", colour="def
         mean += number
 
     mean /= n
-
-    for number in read_numbers(f):
-        sd += (mean - number)**2
-
-    sd /= (n - 1)
-    sd **= 0.5
 
     bins = list(calc_bins(n, min_val, max_val, bincount, binwidth))
     hist = dict((i, 0) for i in range(len(bins)))
@@ -184,12 +179,11 @@ def plot_hist(f, height=20.0, bincount=None, binwidth=None, pch="o", colour="def
     print(" " * (nlen + 1) + "-" * len(xs))
 
     if xlab:
-        labels = abbreviate([str(b) for b in bins])
-        xlen = len(labels[0])
+        xlen = len(str(float((max_y) / height) + max_y))
         for i in range(0, xlen):
             printcolour(" " * (nlen + 1), True, colour)
             for x in range(0, len(hist)):
-                num = labels[x]
+                num = str(bins[x])
                 if x % 2 != 0:
                     pass
                 elif i < len(num):
@@ -209,7 +203,6 @@ def plot_hist(f, height=20.0, bincount=None, binwidth=None, pch="o", colour="def
         summary = "|" + ("observations: %d" % n).center(center) + "|\n"
         summary += "|" + ("min value: %f" % min_val).center(center) + "|\n"
         summary += "|" + ("mean : %f" % mean).center(center) + "|\n"
-        summary += "|" + ("std dev : %f" % sd).center(center) + "|\n"
         summary += "|" + ("max value: %f" % max_val).center(center) + "|\n"
         summary += "-" * (2 + center)
         print(summary)
@@ -232,7 +225,7 @@ def main():
     parser.add_option('-x', '--xlab', help='label bins on x-axis',
                       default=None, action="store_true", dest='x')
     parser.add_option('-c', '--colour', help='colour of the plot (%s)' %
-                      colour_help, default='default', dest='colour')
+                      colour_help, default=None, dest='colour')
     parser.add_option('-d', '--demo', help='run demos', action='store_true', dest='demo')
     parser.add_option('-n', '--nosummary', help='hide summary',
                       action='store_false', dest='showSummary', default=True)
