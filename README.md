@@ -1,3 +1,13 @@
+# Forked from the original bashplotlib: https://github.com/glamp/bashplotlib
+## bugfix and feature addition:
+- added -d delimiter and default to tab. (scatter) 
+- default color to none to remove strange character during bash piping. (scatter + hist)
+- fixed "broken pipe" during bash piping. (scatter + hist)
+
+
+
+############################# Original README #############################
+
 # bashplotlib
 *plotting in the terminal*
 
