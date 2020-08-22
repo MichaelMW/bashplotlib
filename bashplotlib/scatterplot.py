@@ -12,13 +12,15 @@ import optparse
 from .utils.helpers import *
 from .utils.commandhelp import scatter
 
+from signal import signal, SIGPIPE, SIG_DFL
+signal(SIGPIPE,SIG_DFL)
+
 
 def get_scale(series, is_y=False, steps=20):
     min_val = min(series)
     max_val = max(series)
     scaled_series = []
-    for x in drange(min_val, max_val, (max_val - min_val) / steps,
-                    include_stop=True):
+    for x in drange(min_val, max_val, (max_val - min_val) / steps):
         if x > 0 and scaled_series and max(scaled_series) < 0:
             scaled_series.append(0.0)
         scaled_series.append(x)
@@ -28,7 +30,31 @@ def get_scale(series, is_y=False, steps=20):
     return scaled_series
 
 
-def _plot_scatter(xs, ys, size, pch, colour, title, cs):
+def plot_scatter(f, xs, ys, size, pch, colour, title, delimiter):
+    """
+    Form a complex number.
+
+    Arguments:
+        f -- delimited (by delimiter) file w/ x,y coordinates
+        xs -- if f not specified this is a file w/ x coordinates
+        ys -- if f not specified this is a filew / y coordinates
+        size -- size of the plot
+        pch -- shape of the points (any character)
+        colour -- colour of the points
+        title -- title of the plot
+    """
+
+    if f:
+        if isinstance(f, str):
+            f = open(f)
+
+        data = [tuple(map(float, line.strip().split(delimiter))) for line in f]
+        xs = [i[0] for i in data]
+        ys = [i[1] for i in data]
+    else:
+        xs = [float(str(row).strip()) for row in open(xs)]
+        ys = [float(str(row).strip()) for row in open(ys)]
+
     plotted = set()
 
     if title:
@@ -42,47 +68,20 @@ def _plot_scatter(xs, ys, size, pch, colour, title, cs):
             for (i, (xp, yp)) in enumerate(zip(xs, ys)):
                 if xp <= x and yp >= y and (xp, yp) not in plotted:
                     point = pch
+                    #point = str(i)
                     plotted.add((xp, yp))
-                    if cs:
-                        colour = cs[i]
-            printcolour(point, True, colour)
-        print(" |")
+            if x == 0 and y == 0:
+                point = "o"
+            elif x == 0:
+                point = "|"
+            elif y == 0:
+                point = "-"
+			if colour:
+            	printcolour(point, True, colour)
+            else:
+				print(point, end='')
+        print("|")
     print("-" * (2 * len(get_scale(xs, False, size)) + 2))
-
-def plot_scatter(f, xs, ys, size, pch, colour, title):
-    """
-    Form a complex number.
-
-    Arguments:
-        f -- comma delimited file w/ x,y coordinates
-        xs -- if f not specified this is a file w/ x coordinates
-        ys -- if f not specified this is a filew / y coordinates
-        size -- size of the plot
-        pch -- shape of the points (any character)
-        colour -- colour of the points
-        title -- title of the plot
-    """
-    cs = None
-    if f:
-        if isinstance(f, str):
-            with open(f) as fh:
-                data = [tuple(line.strip().split(',')) for line in fh]
-        else:
-            data = [tuple(line.strip().split(',')) for line in f]
-        xs = [float(i[0]) for i in data]
-        ys = [float(i[1]) for i in data]
-        if len(data[0]) > 2:
-            cs = [i[2].strip() for i in data]
-    elif isinstance(xs, list) and isinstance(ys, list):
-        pass
-    else:
-        with open(xs) as fh:
-            xs = [float(str(row).strip()) for row in fh]
-        with open(ys) as fh:
-            ys = [float(str(row).strip()) for row in fh]
-
-    _plot_scatter(xs, ys, size, pch, colour, title, cs)
-    
 
 
 def main():
@@ -94,9 +93,10 @@ def main():
     parser.add_option('-x', help='x coordinates', default=None, dest='x')
     parser.add_option('-y', help='y coordinates', default=None, dest='y')
     parser.add_option('-s', '--size', help='y coordinates', default=20, dest='size', type='int')
+    parser.add_option('-d', '--delimiter', help='delimiter', default="\t", dest='delimiter')
     parser.add_option('-p', '--pch', help='shape of point', default="x", dest='pch')
     parser.add_option('-c', '--colour', help='colour of the plot (%s)' %
-                      colour_help, default='default', dest='colour')
+                      colour_help, default=None, dest='colour')
 
     opts, args = parser.parse_args()
 
@@ -104,7 +104,7 @@ def main():
         opts.f = sys.stdin.readlines()
 
     if opts.f or (opts.x and opts.y):
-        plot_scatter(opts.f, opts.x, opts.y, opts.size, opts.pch, opts.colour, opts.t)
+        plot_scatter(opts.f, opts.x, opts.y, opts.size, opts.pch, opts.colour, opts.t, opts.delimiter)
     else:
         print("nothing to plot!")
 

@@ -20,30 +20,29 @@ bcolours = {
     "grey":    '\033[90m',
     "black":   '\033[30m',
     "default": '\033[39m',
+	"none":    '',
     "ENDC":    '\033[39m',
 }
 
 colour_help = ', '.join([colour for colour in bcolours if colour != "ENDC"])
 
 
-def get_colour(colour, default="default"):
+def get_colour(colour):
     """
     Get the escape code sequence for a colour
     """
-    return bcolours.get(colour, bcolours[default])
+    return bcolours.get(colour, bcolours['ENDC'])
 
 
-def printcolour(text, sameline=False, colour="default"):
+def printcolour(text, sameline=False, colour=get_colour("ENDC")):
     """
     Print color text using escape codes
     """
-    sep = '' if sameline else '\n'
-
-    # If no colour set, do not print color ESC characters
-    if get_colour(colour) == get_colour("ENDC"):
-        sys.stdout.write(text + sep)
+    if sameline:
+        sep = ''
     else:
-        sys.stdout.write(get_colour(colour) + text + get_colour("ENDC") + sep)
+        sep = '\n'
+    sys.stdout.write(get_colour(colour) + text + bcolours["ENDC"] + sep)
 
 
 def drange(start, stop, step=1.0, include_stop=False):
@@ -64,18 +63,6 @@ def drange(start, stop, step=1.0, include_stop=False):
             yield r
             r += step
             r = round(r, 10)
-
-
-def abbreviate(labels, rfill=' '):
-    """
-    Abbreviate labels without introducing ambiguities.
-    """
-    max_len = max(len(l) for l in labels)
-    for i in range(1, max_len):
-        abbrev = [l[:i].ljust(i, rfill) for l in labels]
-        if len(abbrev) == len(set(abbrev)):
-            break
-    return abbrev
 
 
 def box_text(text, width, offset=0):
