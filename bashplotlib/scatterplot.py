@@ -76,10 +76,10 @@ def plot_scatter(f, xs, ys, size, pch, colour, title, delimiter):
                 point = "|"
             elif y == 0:
                 point = "-"
-			if colour:
-            	printcolour(point, True, colour)
+            if colour:
+                printcolour(point, True, colour)
             else:
-				print(point, end='')
+                print(point, end='')
         print("|")
     print("-" * (2 * len(get_scale(xs, False, size)) + 2))
 
